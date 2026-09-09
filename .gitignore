@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# uv / virtualenv
+.venv/
+
+# macOS
+.DS_Store
+
+# datasets (re-downloadable via datasets lib)
+raw/
