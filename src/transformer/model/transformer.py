@@ -1,22 +1,19 @@
 import torch
 import torch.nn as nn
-from pydantic import BaseModel, Field, PositiveInt, field_validator
+from pydantic import BaseModel, Field, PositiveInt, field_validator, model_validator
 from .encoder import Encoder
 from .decoder import Decoder
 
-class TransformerConfig(BaseModel):
-    n_enc: PositiveInt
-    n_dec: PositiveInt
-    src_vocab_size: PositiveInt
-    tgt_vocab_size: PositiveInt
-    max_seq_len: PositiveInt
-    d_model: PositiveInt
-    d_kq: PositiveInt
-    d_v: PositiveInt
-    h: PositiveInt
-    d_ff: PositiveInt
+class TransformerArchConfig(BaseModel):
+    n_enc: PositiveInt = 2
+    n_dec: PositiveInt = 2
+    max_seq_len: PositiveInt = 1000
+    d_model: PositiveInt = 256
+    d_kq: PositiveInt = 64
+    d_v: PositiveInt = 64
+    h: PositiveInt = 4
+    d_ff: PositiveInt = 1024
     p_drop: float = Field(default=0.1, ge=0.0, lt=1.0)
-    share_embeddings: bool = True
 
     @field_validator('d_model')
     @classmethod
@@ -27,19 +24,31 @@ class TransformerConfig(BaseModel):
             raise ValueError(f'd_model must be even, got {v}')
         return v
 
+class TransformerVocabConfig(BaseModel):
+    src_vocab_size: PositiveInt
+    tgt_vocab_size: PositiveInt
+    shared_embeddings: bool = True
+
+    @model_validator(mode='after')
+    def _check_embedding_sharing(self):
+        # not hard-line defense, but stops obvious error of mismatched vocab_sizes with shared embeddings
+        if self.shared_embeddings and self.src_vocab_size != self.tgt_vocab_size:
+            raise ValueError('shared_embeddings=True requires src_vocab_size and tgt_vocab_size to match')
+        return self
+
 class Transformer(nn.Module):
-    def __init__(self, cfg: TransformerConfig) -> None:
+    def __init__(self, arch_cfg: TransformerArchConfig, vocab_cfg: TransformerVocabConfig) -> None:
         super().__init__()
-        self.encoder = Encoder(n_enc=cfg.n_enc, vocab_size=cfg.src_vocab_size, max_seq_len=cfg.max_seq_len, d_model=cfg.d_model, d_kq=cfg.d_kq, d_v=cfg.d_v, h=cfg.h, d_ff=cfg.d_ff, p_drop=cfg.p_drop)
-        self.decoder = Decoder(n_dec=cfg.n_dec, vocab_size=cfg.tgt_vocab_size, max_seq_len=cfg.max_seq_len, d_model=cfg.d_model, d_kq=cfg.d_kq, d_v=cfg.d_v, h=cfg.h, d_ff=cfg.d_ff, p_drop=cfg.p_drop)
+        self.encoder = Encoder(n_enc=arch_cfg.n_enc, vocab_size=vocab_cfg.src_vocab_size, max_seq_len=arch_cfg.max_seq_len, d_model=arch_cfg.d_model, d_kq=arch_cfg.d_kq, d_v=arch_cfg.d_v, h=arch_cfg.h, d_ff=arch_cfg.d_ff, p_drop=arch_cfg.p_drop)
+        self.decoder = Decoder(n_dec=arch_cfg.n_dec, vocab_size=vocab_cfg.tgt_vocab_size, max_seq_len=arch_cfg.max_seq_len, d_model=arch_cfg.d_model, d_kq=arch_cfg.d_kq, d_v=arch_cfg.d_v, h=arch_cfg.h, d_ff=arch_cfg.d_ff, p_drop=arch_cfg.p_drop)
 
-        self.linear = nn.Linear(in_features=cfg.d_model, out_features=cfg.tgt_vocab_size)
+        self.linear = nn.Linear(in_features=arch_cfg.d_model, out_features=vocab_cfg.tgt_vocab_size)
 
-        if cfg.share_embeddings:
+        if vocab_cfg.shared_embeddings:
             self.decoder.emb.emb.weight = self.encoder.emb.emb.weight
         self.linear.weight = self.decoder.emb.emb.weight
 
-        causal_mask = torch.triu(torch.ones((cfg.max_seq_len, cfg.max_seq_len), dtype=torch.bool), diagonal=1)
+        causal_mask = torch.triu(torch.ones((arch_cfg.max_seq_len, arch_cfg.max_seq_len), dtype=torch.bool), diagonal=1)
         self.register_buffer('causal_mask', causal_mask, persistent=False)
 
     def _compute_causal_mask(self, mask_size:int):
