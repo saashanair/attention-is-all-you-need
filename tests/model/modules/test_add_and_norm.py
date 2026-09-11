@@ -2,12 +2,8 @@ import pytest
 import torch
 from torch import nn
 
+from tests.model._dims import BATCH, D_MODEL, P_DROP, SEQ_LEN
 from transformer.model.modules import AddAndNorm
-
-BATCH = 3
-SEQ_LEN = 5
-D_MODEL = 4
-P_DROP = 0.1
 
 
 @pytest.fixture

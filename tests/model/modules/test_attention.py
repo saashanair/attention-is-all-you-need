@@ -4,15 +4,21 @@ import pytest
 import torch
 from torch import nn
 
+from tests.model._dims import BATCH, D_KQ, D_MODEL, D_V, HEADS, SL_KV, SL_Q
 from transformer.model.modules import MultiHeadAttention
 
-D_MODEL = 4
-HEADS = 2
-D_KQ = D_V = D_MODEL // HEADS
 
-BATCH = 3
-SL_Q = 5
-SL_KV = 10
+def _get_mask_1d(blocked_keys: list[int], sl: int):
+    m = torch.zeros(sl, dtype=torch.bool)
+    m[blocked_keys] = True
+    return m  # (sl,)
+
+
+def _get_mask_2d(blocked_pairs: list[tuple[int, int]], sl_rows: int, sl_cols: int):
+    m = torch.zeros(sl_rows, sl_cols, dtype=torch.bool)
+    for row, col in blocked_pairs:
+        m[row, col] = True
+    return m  # (sl_rows, sl_cols)
 
 
 @pytest.fixture
@@ -28,19 +34,6 @@ def x_kv():
 @pytest.fixture
 def mha_layer():
     return MultiHeadAttention(d_model=D_MODEL, d_kq=D_KQ, d_v=D_V, h=HEADS)
-
-
-def _mask_1d(blocked_keys, sl=SL_KV):
-    m = torch.zeros(sl, dtype=torch.bool)
-    m[blocked_keys] = True
-    return m  # (sl,)
-
-
-def _mask_2d(blocked_pairs):
-    m = torch.zeros(SL_Q, SL_KV, dtype=torch.bool)
-    for q, k in blocked_pairs:
-        m[q, k] = True
-    return m  # (SL_Q, SL_KV)
 
 
 class TestMultiHeadAttentionConstruction:
@@ -68,7 +61,7 @@ class TestMultiHeadAttentionForward:
         assert out.shape == (BATCH, SL_Q, D_MODEL)
 
     def test_masked_self_attention_output_shape(self, mha_layer, x_q):
-        out = mha_layer(x_q=x_q, x_kv=x_q, mask=_mask_1d([-2, -1], sl=SL_Q))
+        out = mha_layer(x_q=x_q, x_kv=x_q, mask=_get_mask_1d([-2, -1], sl=SL_Q))
         assert out.shape == (BATCH, SL_Q, D_MODEL)
 
     def test_cross_attention_output_shape(self, mha_layer, x_q, x_kv):
@@ -76,7 +69,7 @@ class TestMultiHeadAttentionForward:
         assert out.shape == (BATCH, SL_Q, D_MODEL)
 
     def test_masked_cross_attention_output_shape(self, mha_layer, x_q, x_kv):
-        out = mha_layer(x_q=x_q, x_kv=x_kv, mask=_mask_1d([-2, -1]))
+        out = mha_layer(x_q=x_q, x_kv=x_kv, mask=_get_mask_1d([-2, -1], sl=SL_KV))
         assert out.shape == (BATCH, SL_Q, D_MODEL)
 
     def test_attention_output_shape_with_independent_dims(self, x_kv):
@@ -94,13 +87,13 @@ class TestMultiHeadAttentionForward:
         'mask, perturb_keys',
         [
             pytest.param(
-                _mask_1d([8, 9]), [8, 9], id='1d_perturb_masked'
+                _get_mask_1d([8, 9], sl=SL_KV), [8, 9], id='1d_perturb_masked'
             ),  # bump the same keys the mask blocks -> output must not move
             pytest.param(
-                _mask_1d([8, 9]), [0, 4], id='1d_perturb_visible'
+                _get_mask_1d([8, 9], sl=SL_KV), [0, 4], id='1d_perturb_visible'
             ),  # bump keys the mask lets through -> output must move
             pytest.param(
-                _mask_2d([(0, 5), (1, 5), (2, 5)]), [5], id='2d_per_query'
+                _get_mask_2d([(0, 5), (1, 5), (2, 5)], sl_rows=SL_Q, sl_cols=SL_KV), [5], id='2d_per_query'
             ),  # key 5 blocked for rows 0-2 only -> rows 0-2 immune, rows 3-4 not
         ],
     )

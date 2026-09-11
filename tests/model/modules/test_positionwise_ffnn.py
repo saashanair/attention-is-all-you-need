@@ -2,13 +2,8 @@ import pytest
 import torch
 from torch import nn
 
+from tests.model._dims import BATCH, D_FF, D_MODEL, P_DROP, SEQ_LEN
 from transformer.model.modules import PositionwiseFeedForward
-
-BATCH = 10
-SEQ_LEN = 3
-D_MODEL = 4
-D_FF = 16
-P_DROP = 0.1
 
 
 @pytest.fixture

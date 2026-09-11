@@ -3,11 +3,8 @@ import math
 import pytest
 import torch
 
+from tests.model._dims import D_MODEL, MAX_SEQ_LEN, SEQ_LEN
 from transformer.model.modules import PositionalEncoding
-
-SEQ_LEN = 5
-MAX_SEQ_LEN = 10
-D_MODEL = 4
 
 
 @pytest.fixture
