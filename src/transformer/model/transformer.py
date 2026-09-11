@@ -41,6 +41,8 @@ class TransformerVocabConfig(BaseModel):
 
 
 class Transformer(nn.Module):
+    causal_mask: torch.Tensor  # declared for type checkers -- register_buffer() alone types this as a generic Module
+
     def __init__(self, arch_cfg: TransformerArchConfig, vocab_cfg: TransformerVocabConfig) -> None:
         super().__init__()
         self.encoder = Encoder(

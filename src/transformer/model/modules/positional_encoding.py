@@ -5,6 +5,8 @@ from torch import nn
 
 
 class PositionalEncoding(nn.Module):
+    pe: torch.Tensor  # declared for type checkers -- register_buffer() alone types this as a generic Module
+
     def __init__(self, max_seq_len: int, d_model: int) -> None:
         super().__init__()
         self.max_seq_len = max_seq_len
