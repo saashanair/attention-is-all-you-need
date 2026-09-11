@@ -30,6 +30,12 @@ class DecoderLayer(nn.Module):
         self_mask: torch.Tensor | None = None,
         cross_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
+        # input (x) -> (batch, sequence_length_tgt, d_model)
+        # input (x_enc) -> (batch, sequence_length_src, d_model)
+        # input (self_mask) -> (batch, 1, sequence_length_tgt, sequence_length_tgt) ; causal & padding masks for target
+        # input (cross_mask) -> (batch, 1, 1, sequence_length_src) ; padding mask for source
+        # output -> (batch, sequence_length_tgt, d_model)
+
         sublayer_x = self.masked_mha(x_q=x, x_kv=x, mask=self_mask)
         out = self.norm1(residual_x=x, sublayer_x=sublayer_x)
 
@@ -77,6 +83,6 @@ class Decoder(nn.Module):
         out = self.dropout(emb + pe)
 
         for dec_layer in self.dec:
-            out = dec_layer(out, x_enc, self_mask=self_mask, cross_mask=cross_mask)
+            out = dec_layer(x=out, x_enc=x_enc, self_mask=self_mask, cross_mask=cross_mask)
 
         return out

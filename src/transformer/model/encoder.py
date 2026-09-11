@@ -20,11 +20,15 @@ class EncoderLayer(nn.Module):
         self.norm2 = AddAndNorm(d_model=d_model, p_drop=p_drop)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
+        # input (x) -> (batch, sequence_length, d_model)
+        # input (mask): padding_mask -> (batch, 1, 1, sequence_length)
+        # output -> (batch, sequence_length, d_model)
+
         sublayer_x = self.mha(x_q=x, x_kv=x, mask=mask)
         out = self.norm1(residual_x=x, sublayer_x=sublayer_x)
 
-        sublayer_x = self.ffnn(out)
-        out = self.norm2(out, sublayer_x)
+        sublayer_x = self.ffnn(x=out)
+        out = self.norm2(residual_x=out, sublayer_x=sublayer_x)
 
         return out
 
@@ -52,11 +56,15 @@ class Encoder(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
-        emb = self.emb(x)
-        pe = self.pe(x.size(1))
-        out = self.dropout(emb + pe)
+        # input (x) -> (batch, sequence_length)
+        # input (mask): padding_mask -> (batch, 1, 1, sequence_length)
+        # output -> (batch, sequence_length, d_model)
+
+        emb = self.emb(x=x)
+        pe = self.pe(seq_len=x.size(1))
+        out = self.dropout(input=emb + pe)
 
         for enc_layer in self.enc:
-            out = enc_layer(out, mask=mask)
+            out = enc_layer(x=out, mask=mask)
 
         return out
