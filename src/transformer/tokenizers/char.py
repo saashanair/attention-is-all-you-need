@@ -3,13 +3,15 @@ from .base import Tokenizer
 
 class CharTokenizer(Tokenizer):
     def __init__(self, corpus: list[str]):
-        chars = sorted({ch for line in corpus for ch in line}) # using set comprehension over join for memory efficiency, as join would create a new string that is the total length of the corpus
+        chars = sorted(
+            {ch for line in corpus for ch in line}
+        )  # using set comprehension over join for memory efficiency, as join would create a new string that is the total length of the corpus
         if len(chars) == 0:
             raise ValueError('corpus is empty')
         self.vocab = self.SPECIALS + chars
         self.stoi = {ch: i for i, ch in enumerate(self.vocab)}
         self._validate_specials_in_vocab()
-        self._unk_id =  self.stoi[self.UNK]
+        self._unk_id = self.stoi[self.UNK]
 
     @property
     def vocab_size(self) -> int:
@@ -34,11 +36,7 @@ class CharTokenizer(Tokenizer):
 
     def decode(self, ids: list[int], skip_special_tokens: bool = True) -> str:
         special_ids = self.special_ids
-        return "".join(
-            self.id_to_token(i)
-            for i in ids
-            if not skip_special_tokens or i not in special_ids
-        )
+        return ''.join(self.id_to_token(i) for i in ids if not skip_special_tokens or i not in special_ids)
 
     def save(self, path: str) -> None:
         raise NotImplementedError('save has not yet been implemented on CharTokenizer')

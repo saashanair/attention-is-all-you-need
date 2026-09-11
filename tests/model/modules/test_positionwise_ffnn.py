@@ -10,6 +10,7 @@ D_MODEL = 4
 D_FF = 16
 P_DROP = 0.1
 
+
 @pytest.fixture
 def inp_x():
     # treating this as a fixture, rather than a constant defined above
@@ -18,9 +19,11 @@ def inp_x():
     # leak between tests
     return torch.randn(BATCH, SEQ_LEN, D_MODEL)
 
+
 @pytest.fixture
 def ffnn_layer():
     return PositionwiseFeedForward(d_model=D_MODEL, d_ff=D_FF, p_drop=P_DROP)
+
 
 class TestPositionwiseFFNNConstruction:
     def test_submodules_registered(self, ffnn_layer):
@@ -37,8 +40,9 @@ class TestPositionwiseFFNNConstruction:
     def test_dropout_p(self, ffnn_layer):
         assert ffnn_layer.dropout.p == P_DROP
 
+
 class TestPositionwiseFFNNForward:
-    @pytest.mark.parametrize("x_shape", [(D_MODEL,), (SEQ_LEN, D_MODEL), (BATCH, SEQ_LEN, D_MODEL)])
+    @pytest.mark.parametrize('x_shape', [(D_MODEL,), (SEQ_LEN, D_MODEL), (BATCH, SEQ_LEN, D_MODEL)])
     def test_output_shape(self, ffnn_layer, x_shape):
         x = torch.randn(x_shape)
         assert ffnn_layer(x).shape == x_shape

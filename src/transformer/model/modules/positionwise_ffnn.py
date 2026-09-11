@@ -20,6 +20,8 @@ class PositionwiseFeedForward(nn.Module):
         # output -> (batch, sequence_length, d_model)
 
         x = F.relu(self.l1(x))
-        x = self.dropout(x) # the paper does not mention a dropout here, but the TF implementation of the paper adds it in
+        x = self.dropout(
+            x
+        )  # the paper does not mention a dropout here, but the TF implementation of the paper adds it in
         x = self.l2(x)
         return x

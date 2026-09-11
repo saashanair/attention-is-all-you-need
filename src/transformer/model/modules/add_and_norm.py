@@ -12,5 +12,3 @@ class AddAndNorm(nn.Module):
         # input (residual_x, sublayer_x): (batch, sequence_length, d_model)
         # output: (batch, sequence_length, d_model)
         return self.ln(residual_x + self.dropout(sublayer_x))
-
-    

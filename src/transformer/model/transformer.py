@@ -26,6 +26,7 @@ class TransformerArchConfig(BaseModel):
             raise ValueError(f'd_model must be even, got {v}')
         return v
 
+
 class TransformerVocabConfig(BaseModel):
     src_vocab_size: PositiveInt
     tgt_vocab_size: PositiveInt
@@ -38,11 +39,32 @@ class TransformerVocabConfig(BaseModel):
             raise ValueError('shared_embeddings=True requires src_vocab_size and tgt_vocab_size to match')
         return self
 
+
 class Transformer(nn.Module):
     def __init__(self, arch_cfg: TransformerArchConfig, vocab_cfg: TransformerVocabConfig) -> None:
         super().__init__()
-        self.encoder = Encoder(n_enc=arch_cfg.n_enc, vocab_size=vocab_cfg.src_vocab_size, max_seq_len=arch_cfg.max_seq_len, d_model=arch_cfg.d_model, d_kq=arch_cfg.d_kq, d_v=arch_cfg.d_v, h=arch_cfg.h, d_ff=arch_cfg.d_ff, p_drop=arch_cfg.p_drop)
-        self.decoder = Decoder(n_dec=arch_cfg.n_dec, vocab_size=vocab_cfg.tgt_vocab_size, max_seq_len=arch_cfg.max_seq_len, d_model=arch_cfg.d_model, d_kq=arch_cfg.d_kq, d_v=arch_cfg.d_v, h=arch_cfg.h, d_ff=arch_cfg.d_ff, p_drop=arch_cfg.p_drop)
+        self.encoder = Encoder(
+            n_enc=arch_cfg.n_enc,
+            vocab_size=vocab_cfg.src_vocab_size,
+            max_seq_len=arch_cfg.max_seq_len,
+            d_model=arch_cfg.d_model,
+            d_kq=arch_cfg.d_kq,
+            d_v=arch_cfg.d_v,
+            h=arch_cfg.h,
+            d_ff=arch_cfg.d_ff,
+            p_drop=arch_cfg.p_drop,
+        )
+        self.decoder = Decoder(
+            n_dec=arch_cfg.n_dec,
+            vocab_size=vocab_cfg.tgt_vocab_size,
+            max_seq_len=arch_cfg.max_seq_len,
+            d_model=arch_cfg.d_model,
+            d_kq=arch_cfg.d_kq,
+            d_v=arch_cfg.d_v,
+            h=arch_cfg.h,
+            d_ff=arch_cfg.d_ff,
+            p_drop=arch_cfg.p_drop,
+        )
 
         self.linear = nn.Linear(in_features=arch_cfg.d_model, out_features=vocab_cfg.tgt_vocab_size)
 
@@ -53,33 +75,43 @@ class Transformer(nn.Module):
         causal_mask = torch.triu(torch.ones((arch_cfg.max_seq_len, arch_cfg.max_seq_len), dtype=torch.bool), diagonal=1)
         self.register_buffer('causal_mask', causal_mask, persistent=False)
 
-    def _compute_causal_mask(self, mask_size:int):
+    def _compute_causal_mask(self, mask_size: int):
         return self.causal_mask[:mask_size, :mask_size]
 
     def encode(self, source, source_mask=None):
         return self.encoder(x=source, mask=source_mask)
 
-    def decode(self, encoder_output: torch.Tensor, decoder_input: torch.Tensor, self_mask: torch.Tensor | None = None, cross_mask: torch.Tensor | None = None):
+    def decode(
+        self,
+        encoder_output: torch.Tensor,
+        decoder_input: torch.Tensor,
+        self_mask: torch.Tensor | None = None,
+        cross_mask: torch.Tensor | None = None,
+    ):
         return self.decoder(x=decoder_input, x_enc=encoder_output, self_mask=self_mask, cross_mask=cross_mask)
 
-    def forward(self, src: torch.Tensor, tgt: torch.Tensor, src_pad_mask: torch.Tensor, tgt_pad_mask: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, src: torch.Tensor, tgt: torch.Tensor, src_pad_mask: torch.Tensor, tgt_pad_mask: torch.Tensor
+    ) -> torch.Tensor:
         # src -> (batch, sl_src)
         # tgt -> (batch, sl_tgt)
         # src_pad_mask -> (batch, sl_src)
         # tgt_pad_mask -> (batch, sl_tgt)
 
         # need to make sure masks are broadcastable to (batch, head, sl_q, sl_kv) to pass on to attention
-        src_pad_mask = src_pad_mask.unsqueeze(1).unsqueeze(1) # (batch, 1, 1, sl_src)
-        tgt_pad_mask = tgt_pad_mask.unsqueeze(1).unsqueeze(1) # (batch, 1, 1, sl_tgt)
-        tgt_causal_mask = self._compute_causal_mask(tgt.shape[-1]) # (sl_tgt, sl_tgt)
+        src_pad_mask = src_pad_mask.unsqueeze(1).unsqueeze(1)  # (batch, 1, 1, sl_src)
+        tgt_pad_mask = tgt_pad_mask.unsqueeze(1).unsqueeze(1)  # (batch, 1, 1, sl_tgt)
+        tgt_causal_mask = self._compute_causal_mask(tgt.shape[-1])  # (sl_tgt, sl_tgt)
 
-        self_mask = tgt_causal_mask | tgt_pad_mask # (batch, 1, sl_tgt, sl_tgt)
+        self_mask = tgt_causal_mask | tgt_pad_mask  # (batch, 1, sl_tgt, sl_tgt)
 
         out = self.encode(source=src, source_mask=src_pad_mask)
-        out = self.decode(encoder_output=out, decoder_input=tgt, self_mask=self_mask, cross_mask=src_pad_mask) # cross_mask depends on src as the input data there is the encoder's outptu
+        out = self.decode(
+            encoder_output=out, decoder_input=tgt, self_mask=self_mask, cross_mask=src_pad_mask
+        )  # cross_mask depends on src as the input data there is the encoder's outptu
         logits = self.linear(out)
         return logits
 
-    #TODO: write code to generate output at inference time
+    # TODO: write code to generate output at inference time
     # don't forget to apply softmax - as per the paper
-    #def generate(self):
+    # def generate(self):
