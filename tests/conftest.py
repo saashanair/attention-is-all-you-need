@@ -1,5 +1,6 @@
-import torch
 import pytest
+import torch
+
 
 @pytest.fixture(autouse=True)
 def _seed():

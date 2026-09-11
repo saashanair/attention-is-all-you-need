@@ -1,5 +1,6 @@
-from .train import TrainConfig, OptimiserConfig, train
 from .model import TransformerArchConfig
+from .train import OptimiserConfig, TrainConfig, train
+
 
 def main():
     cfg = TrainConfig(

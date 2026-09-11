@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
+from typing import ClassVar
+
 
 class Tokenizer(ABC):
     PAD, BOS, EOS, UNK = '<pad>', '<start>', '<end>', '<unk>'
-    SPECIALS = [PAD, BOS, EOS, UNK]
+    SPECIALS: ClassVar[list[str]] = [PAD, BOS, EOS, UNK]
 
     # === properties for id look up ===
     @property
@@ -57,7 +59,7 @@ class Tokenizer(ABC):
 
     @classmethod
     @abstractmethod
-    def load(cls, path: str) -> "Tokenizer":
+    def load(cls, path: str) -> Tokenizer:
         ...
 
     # === methods ===

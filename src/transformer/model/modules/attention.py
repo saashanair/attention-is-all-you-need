@@ -1,7 +1,9 @@
 import math
+
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
+
 
 def scaled_dot_product_attention(Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor, scaling_factor: float, mask: torch.Tensor | None =None) -> torch.Tensor:
     # Q -> (batch, h, sequence_length_q, d_kq)

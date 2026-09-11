@@ -1,6 +1,14 @@
 import torch
-import torch.nn as nn
-from .modules import Embedding, PositionalEncoding, MultiHeadAttention, PositionwiseFeedForward, AddAndNorm
+from torch import nn
+
+from .modules import (
+    AddAndNorm,
+    Embedding,
+    MultiHeadAttention,
+    PositionalEncoding,
+    PositionwiseFeedForward,
+)
+
 
 class DecoderLayer(nn.Module):
     def __init__(self, d_model: int, d_kq: int, d_v: int, h: int, d_ff: int, p_drop: float=0.1) -> None:

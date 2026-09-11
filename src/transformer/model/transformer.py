@@ -1,8 +1,10 @@
 import torch
-import torch.nn as nn
 from pydantic import BaseModel, Field, PositiveInt, field_validator, model_validator
-from .encoder import Encoder
+from torch import nn
+
 from .decoder import Decoder
+from .encoder import Encoder
+
 
 class TransformerArchConfig(BaseModel):
     n_enc: PositiveInt = 2

@@ -1,6 +1,8 @@
 import math
+
 import pytest
 import torch
+
 from transformer.model.modules import PositionalEncoding
 
 SEQ_LEN = 5
@@ -36,8 +38,8 @@ class TestPositionalEncodingConstruction:
     def test_pos_zero(self, pe_layer):
         # for the zero-th row, i.e, when pos=0, the (pos/10000^(2i/d_model)) term becomes 0, 
         # which collapses the pe[pos] value to sin(0) = 0 for even elements, and cos(0) = 1 for odd elements
-        assert torch.allclose(pe_layer.pe[0, 0::2], torch.zeros((D_MODEL//2)))
-        assert torch.allclose(pe_layer.pe[0, 1::2], torch.ones((D_MODEL//2)))
+        assert torch.allclose(pe_layer.pe[0, 0::2], torch.zeros(D_MODEL//2))
+        assert torch.allclose(pe_layer.pe[0, 1::2], torch.ones(D_MODEL//2))
 
 class TestPositionalEncodingForward:
     def test_output_shape(self, pe_layer):

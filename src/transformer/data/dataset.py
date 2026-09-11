@@ -1,9 +1,10 @@
 import torch
-from torch.utils.data import Dataset
-from torch.nn.utils.rnn import pad_sequence
 from datasets import DatasetDict
+from torch.nn.utils.rnn import pad_sequence
+from torch.utils.data import Dataset
 
 from ..tokenizers import Tokenizer
+
 
 def get_pad_mask(x: torch.Tensor, pad_id: int) -> torch.Tensor:
     return x == pad_id

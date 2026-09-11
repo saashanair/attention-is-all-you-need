@@ -1,12 +1,19 @@
 from functools import partial
-from tqdm import tqdm
+
 import torch
-import torch.nn as nn
+from pydantic import BaseModel, Field, PositiveFloat, PositiveInt, model_validator
+from torch import nn
 from torch.utils.data import DataLoader
-from pydantic import BaseModel, PositiveFloat, PositiveInt, Field, model_validator
-from .model import TransformerArchConfig, TransformerVocabConfig, Transformer
-from .data import load_data_from_hf, build_translation_dataset, collate_translation_batch
+from tqdm import tqdm
+
+from .data import (
+    build_translation_dataset,
+    collate_translation_batch,
+    load_data_from_hf,
+)
+from .model import Transformer, TransformerArchConfig, TransformerVocabConfig
 from .tokenizers import CharTokenizer
+
 
 class OptimiserConfig(BaseModel):
     beta1: PositiveFloat = Field(default=0.9, lt=1.0)
@@ -57,7 +64,7 @@ def train(cfg: TrainConfig):
     data, src_vocab_size, tgt_vocab_size, pad_id = prepare_data(dataset_name=cfg.dataset_name, src_lang=cfg.src_lang, tgt_lang=cfg.tgt_lang, max_seq_len=ta_cfg.max_seq_len, shared_tokenizer=cfg.shared_tokenizer)
     train_loader = DataLoader(dataset=data['train'], batch_size=cfg.batch_size, shuffle=True, num_workers=0, collate_fn=partial(collate_translation_batch, pad_id=pad_id))
     val_loader = DataLoader(dataset=data['validation'], batch_size=cfg.batch_size, shuffle=False, num_workers=0, collate_fn=partial(collate_translation_batch, pad_id=pad_id))
-    test_loader = DataLoader(dataset=data['test'], batch_size=cfg.batch_size, shuffle=False, num_workers=0, collate_fn=partial(collate_translation_batch, pad_id=pad_id))
+    test_loader = DataLoader(dataset=data['test'], batch_size=cfg.batch_size, shuffle=False, num_workers=0, collate_fn=partial(collate_translation_batch, pad_id=pad_id))  # noqa: F841 -- wired up once test-set eval is implemented
 
     tv_cfg = TransformerVocabConfig(src_vocab_size=src_vocab_size, tgt_vocab_size=tgt_vocab_size, shared_embeddings=cfg.shared_embeddings)
 

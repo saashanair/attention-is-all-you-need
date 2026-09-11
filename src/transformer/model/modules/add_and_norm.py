@@ -1,5 +1,6 @@
 import torch
-import torch.nn as nn
+from torch import nn
+
 
 class AddAndNorm(nn.Module):
     def __init__(self, d_model: int, p_drop: float = 0.1) -> None:

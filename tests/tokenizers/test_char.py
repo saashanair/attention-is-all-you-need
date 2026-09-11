@@ -1,4 +1,5 @@
 import pytest
+
 from transformer.tokenizers import CharTokenizer
 
 CORPUS = ['hello world', 'hi']

@@ -1,6 +1,7 @@
 import pytest
 import torch
-import torch.nn as nn
+from torch import nn
+
 from transformer.model.modules import PositionwiseFeedForward
 
 BATCH = 10

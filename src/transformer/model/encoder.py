@@ -1,6 +1,13 @@
 import torch
-import torch.nn as nn
-from .modules import Embedding, PositionalEncoding, MultiHeadAttention, PositionwiseFeedForward, AddAndNorm
+from torch import nn
+
+from .modules import (
+    AddAndNorm,
+    Embedding,
+    MultiHeadAttention,
+    PositionalEncoding,
+    PositionwiseFeedForward,
+)
 
 
 class EncoderLayer(nn.Module):

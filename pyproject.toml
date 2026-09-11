@@ -27,3 +27,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--import-mode=importlib"
+
+[tool.ruff.lint.per-file-ignores]
+# __init__.py files are re-export barrels; the imports are the public API, not dead code.
+"__init__.py" = ["F401"]

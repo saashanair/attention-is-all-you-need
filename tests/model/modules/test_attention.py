@@ -1,7 +1,8 @@
 import math
+
 import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 
 from transformer.model.modules import MultiHeadAttention
 

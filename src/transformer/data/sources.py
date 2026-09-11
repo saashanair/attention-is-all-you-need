@@ -1,4 +1,5 @@
-from datasets import load_dataset, load_from_disk, DatasetDict
+from datasets import DatasetDict, load_dataset, load_from_disk
+
 from ..paths import project_root
 
 

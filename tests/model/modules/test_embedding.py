@@ -1,6 +1,8 @@
 import math
+
 import pytest
 import torch
+
 from transformer.model.modules import Embedding
 
 VOCAB_SIZE = 10

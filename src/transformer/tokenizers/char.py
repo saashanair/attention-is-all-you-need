@@ -1,5 +1,6 @@
 from .base import Tokenizer
 
+
 class CharTokenizer(Tokenizer):
     def __init__(self, corpus: list[str]):
         chars = sorted({ch for line in corpus for ch in line}) # using set comprehension over join for memory efficiency, as join would create a new string that is the total length of the corpus
@@ -43,5 +44,5 @@ class CharTokenizer(Tokenizer):
         raise NotImplementedError('save has not yet been implemented on CharTokenizer')
 
     @classmethod
-    def load(cls, path: str) -> "CharTokenizer":
+    def load(cls, path: str) -> CharTokenizer:
         raise NotImplementedError('load has not yet been implemented on CharTokenizer')
