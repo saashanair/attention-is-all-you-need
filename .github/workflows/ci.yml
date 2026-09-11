@@ -32,5 +32,8 @@ jobs:
       - name: Run pre-commit hooks
         run: uv run pre-commit run --all-files
 
+      - name: Type check with pyright
+        run: uv run pyright
+
       - name: Run tests
         run: uv run pytest
