@@ -80,25 +80,26 @@ class Transformer(nn.Module):
     def _compute_causal_mask(self, mask_size: int):
         return self.causal_mask[:mask_size, :mask_size]
 
-    def encode(self, source, source_mask=None):
-        return self.encoder(x=source, mask=source_mask)
+    def encode(self, x, mask=None):
+        return self.encoder(x=x, mask=mask)
 
     def decode(
         self,
-        encoder_output: torch.Tensor,
-        decoder_input: torch.Tensor,
+        x: torch.Tensor,
+        x_enc: torch.Tensor,
         self_mask: torch.Tensor | None = None,
         cross_mask: torch.Tensor | None = None,
     ):
-        return self.decoder(x=decoder_input, x_enc=encoder_output, self_mask=self_mask, cross_mask=cross_mask)
+        return self.decoder(x=x, x_enc=x_enc, self_mask=self_mask, cross_mask=cross_mask)
 
     def forward(
         self, src: torch.Tensor, tgt: torch.Tensor, src_pad_mask: torch.Tensor, tgt_pad_mask: torch.Tensor
     ) -> torch.Tensor:
-        # src -> (batch, sl_src)
-        # tgt -> (batch, sl_tgt)
-        # src_pad_mask -> (batch, sl_src)
-        # tgt_pad_mask -> (batch, sl_tgt)
+        # input (src) -> (batch, sl_src)
+        # input (tgt) -> (batch, sl_tgt)
+        # input (src_pad_mask) -> (batch, sl_src)
+        # input (tgt_pad_mask) -> (batch, sl_tgt)
+        # output -> (batch, sl_tgt, vocab_size_tgt)
 
         # need to make sure masks are broadcastable to (batch, head, sl_q, sl_kv) to pass on to attention
         src_pad_mask = src_pad_mask.unsqueeze(1).unsqueeze(1)  # (batch, 1, 1, sl_src)
@@ -107,10 +108,10 @@ class Transformer(nn.Module):
 
         self_mask = tgt_causal_mask | tgt_pad_mask  # (batch, 1, sl_tgt, sl_tgt)
 
-        out = self.encode(source=src, source_mask=src_pad_mask)
+        out = self.encode(x=src, mask=src_pad_mask)
         out = self.decode(
-            encoder_output=out, decoder_input=tgt, self_mask=self_mask, cross_mask=src_pad_mask
-        )  # cross_mask depends on src as the input data there is the encoder's outptu
+            x=tgt, x_enc=out, self_mask=self_mask, cross_mask=src_pad_mask
+        )  # cross_mask depends on src as the input data for cross-attention is the encoder's output
         logits = self.linear(out)
         return logits
 
