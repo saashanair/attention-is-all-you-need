@@ -45,7 +45,11 @@ class BPETokenizer(Tokenizer):
 
     def token_to_id(self, token: str) -> int:
         id_ = self._hf.token_to_id(token)
-        return id_ if id_ is not None else self._hf.token_to_id(self.UNK)
+        if id_ is not None:
+            return id_
+        unk_id = self._hf.token_to_id(self.UNK)
+        assert unk_id is not None, 'UNK token missing from vocab despite validation at construction'
+        return unk_id
 
     def id_to_token(self, idx: int) -> str:
         token = self._hf.id_to_token(idx)

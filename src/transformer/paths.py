@@ -13,7 +13,7 @@ def project_root(start: Path | None = None) -> Path:
     raise RuntimeError('project root not found')
 
 
-def get_resume_path(resume_path: Path) -> Path:
+def get_resume_path(resume_path: str | Path) -> Path:
     resume_path = Path(resume_path)
     if not (resume_path.exists() and resume_path.is_dir()):
         raise ValueError(f'resume_path={resume_path} not found')
