@@ -21,6 +21,9 @@ def load_checkpoint(checkpoint_path, model, optimizer, lr_scheduler):
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     lr_scheduler.load_state_dict(checkpoint['lr_scheduler_state_dict'])
     start_epoch = checkpoint['epoch']
-    best_loss = checkpoint['val_loss']
 
-    return start_epoch, best_loss
+    return start_epoch
+
+
+def load_best_val_loss(checkpoint_path):
+    return torch.load(checkpoint_path)['val_loss']

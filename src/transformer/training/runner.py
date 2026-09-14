@@ -7,7 +7,7 @@ from tqdm import tqdm
 from ..data import build_dataloaders, build_translation_pipeline
 from ..model import Transformer
 from ..paths import CHECKPOINTS_DIR, TOKENIZER_DIR
-from .checkpointing import load_checkpoint, save_checkpoint
+from .checkpointing import load_best_val_loss, load_checkpoint, save_checkpoint
 from .config import TrainConfig
 from .epoch import evaluate, train_one_epoch
 
@@ -58,12 +58,13 @@ def run(cfg: TrainConfig, device: torch.device, store_path: Path):
     best_loss = float('inf')
 
     if cfg.resume_path:
-        start_epoch, best_loss = load_checkpoint(
+        start_epoch = load_checkpoint(
             checkpoint_path=f'{store_path}/{CHECKPOINTS_DIR}/{LAST_CHECKPOINT}',
             model=transformer,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
         )
+        best_loss = load_best_val_loss(checkpoint_path=f'{store_path}/{CHECKPOINTS_DIR}/{BEST_CHECKPOINT}')
 
     end_epoch = start_epoch + cfg.num_epochs
 
@@ -82,7 +83,7 @@ def run(cfg: TrainConfig, device: torch.device, store_path: Path):
         ### LOGGING
         tqdm.write(f'Epoch {epoch + 1:03d}/{end_epoch:03d} | train loss {train_loss:.3f} | val loss {val_loss:.3f}')
 
-        if epoch == start_epoch or epoch % cfg.chkpt_n_epochs == 0:
+        if epoch == start_epoch or epoch == end_epoch - 1 or epoch % cfg.chkpt_n_epochs == 0:
             save_checkpoint(
                 checkpoint_path=f'{store_path}/{CHECKPOINTS_DIR}/{LAST_CHECKPOINT}',
                 epoch=epoch,
