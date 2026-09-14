@@ -2,6 +2,7 @@ from .base import Tokenizer
 
 
 class CharTokenizer(Tokenizer):
+    # vocab_size added to make the signature uniform
     def __init__(self, corpus: list[str]):
         chars = sorted(
             {ch for line in corpus for ch in line}

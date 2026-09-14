@@ -24,9 +24,9 @@ from tests.model._dims import (
 from tests.model._mask_helpers import get_causal_mask, get_padding_mask
 from transformer.model.decoder import Decoder
 from transformer.model.encoder import Encoder
-from transformer.model.transformer import Transformer, TransformerArchConfig, TransformerVocabConfig
+from transformer.model.transformer import Transformer, TransformerConfig
 
-ARCH_CFG = TransformerArchConfig(
+ARCH_CFG = TransformerConfig(
     n_enc=N_ENC,
     n_dec=N_DEC,
     max_seq_len=MAX_SEQ_LEN,
@@ -42,9 +42,7 @@ ARCH_CFG = TransformerArchConfig(
 # === fixtures for model with shared embeddings ===
 @pytest.fixture
 def model():
-    return Transformer(
-        arch_cfg=ARCH_CFG, vocab_cfg=TransformerVocabConfig(src_vocab_size=VOCAB_SIZE, tgt_vocab_size=VOCAB_SIZE)
-    )
+    return Transformer(src_vocab_size=VOCAB_SIZE, tgt_vocab_size=VOCAB_SIZE, shared_embeddings=True, cfg=ARCH_CFG)
 
 
 @pytest.fixture
@@ -61,10 +59,7 @@ def x_tgt_shared_emb():
 @pytest.fixture
 def model_independent_emb():
     return Transformer(
-        arch_cfg=ARCH_CFG,
-        vocab_cfg=TransformerVocabConfig(
-            src_vocab_size=VOCAB_SIZE_SRC, tgt_vocab_size=VOCAB_SIZE_TGT, shared_embeddings=False
-        ),
+        src_vocab_size=VOCAB_SIZE_SRC, tgt_vocab_size=VOCAB_SIZE_TGT, shared_embeddings=False, cfg=ARCH_CFG
     )
 
 
@@ -89,7 +84,7 @@ def tgt_pad_mask():
     return get_padding_mask(sl=SL_TGT).expand((BATCH, -1))  # (batch, sl_tgt)
 
 
-class TestTransformerConfigs:
+class TestTransformerConfig:
     def test_transformer_arch_config_construction(self):
         assert ARCH_CFG.n_enc == N_ENC
         assert ARCH_CFG.n_dec == N_DEC
@@ -98,16 +93,7 @@ class TestTransformerConfigs:
     def test_d_model_is_even_validation(self, d_model_to_test, expect_error):
         if expect_error:
             with pytest.raises(ValueError):
-                TransformerArchConfig(d_model=d_model_to_test)
-
-    @pytest.mark.parametrize(
-        'shared_emb, vs_src, vs_tgt, expect_error',
-        [(True, 100, 100, False), (True, 100, 200, True), (False, 100, 200, False)],
-    )
-    def test_shared_embeddings_validation(self, shared_emb, vs_src, vs_tgt, expect_error):
-        if expect_error:
-            with pytest.raises(ValueError):
-                TransformerVocabConfig(src_vocab_size=vs_src, tgt_vocab_size=vs_tgt, shared_embeddings=shared_emb)
+                TransformerConfig(d_model=d_model_to_test)
 
 
 class TestTransformerConstruction:
@@ -125,6 +111,15 @@ class TestTransformerConstruction:
         assert model_independent_emb.encoder.emb.emb.weight.shape == (VOCAB_SIZE_SRC, D_MODEL)
         assert model_independent_emb.decoder.emb.emb.weight.shape == (VOCAB_SIZE_TGT, D_MODEL)
         assert model_independent_emb.linear.weight.shape == (VOCAB_SIZE_TGT, D_MODEL)
+
+    @pytest.mark.parametrize(
+        'shared_emb, vs_src, vs_tgt, expect_error',
+        [(True, 100, 100, False), (True, 100, 200, True), (False, 100, 200, False)],
+    )
+    def test_shared_embeddings_validation(self, shared_emb, vs_src, vs_tgt, expect_error):
+        if expect_error:
+            with pytest.raises(ValueError):
+                Transformer(src_vocab_size=vs_src, tgt_vocab_size=vs_tgt, shared_embeddings=shared_emb, cfg=ARCH_CFG)
 
     def test_causal_mask_at_construction(self, model):
         assert model.causal_mask.shape == (MAX_SEQ_LEN, MAX_SEQ_LEN)

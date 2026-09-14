@@ -1,3 +1,4 @@
+from .config import TransformerConfig
 from .decoder import Decoder
 from .encoder import Encoder
-from .transformer import Transformer, TransformerArchConfig, TransformerVocabConfig
+from .transformer import Transformer
