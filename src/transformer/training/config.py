@@ -22,7 +22,10 @@ class TrainConfig(BaseModel):
     label_smoothing: float = Field(default=0.1, ge=0.0, lt=1.0)
     shared_embeddings: bool = True
     resume_path: str | None = None
-    chkpt_n_epochs: int = 10
+    chkpt_n_epochs: PositiveInt = 5
+    early_stopping: bool = True
+    early_stopping_patience: PositiveInt = 5
+    early_stopping_min_delta: float = 0.1
 
     @model_validator(mode='after')
     def _check_embedding_sharing(self):

@@ -1,7 +1,9 @@
 import torch
 
 
-def save_checkpoint(checkpoint_path, epoch, model, optimizer, lr_scheduler, train_loss, val_loss):
+def save_checkpoint(
+    checkpoint_path, epoch, model, optimizer, lr_scheduler, train_loss, val_loss, epochs_without_improvement
+):
     cpt = {
         'epoch': epoch + 1,
         'model_state_dict': model.state_dict(),
@@ -9,6 +11,7 @@ def save_checkpoint(checkpoint_path, epoch, model, optimizer, lr_scheduler, trai
         'lr_scheduler_state_dict': lr_scheduler.state_dict(),
         'train_loss': train_loss,
         'val_loss': val_loss,
+        'epochs_without_improvement': epochs_without_improvement,
     }
 
     torch.save(cpt, checkpoint_path)
@@ -21,8 +24,9 @@ def load_checkpoint(checkpoint_path, model, optimizer, lr_scheduler):
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     lr_scheduler.load_state_dict(checkpoint['lr_scheduler_state_dict'])
     start_epoch = checkpoint['epoch']
+    epochs_without_improvement = checkpoint['epochs_without_improvement']
 
-    return start_epoch
+    return start_epoch, epochs_without_improvement
 
 
 def load_best_val_loss(checkpoint_path):

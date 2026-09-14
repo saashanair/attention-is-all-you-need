@@ -59,9 +59,10 @@ def run(cfg: TrainConfig, device: torch.device, store_path: Path):
 
     start_epoch = 0
     best_loss = float('inf')
+    epochs_without_improvement = 0
 
     if cfg.resume_path:
-        start_epoch = load_checkpoint(
+        start_epoch, epochs_without_improvement = load_checkpoint(
             checkpoint_path=f'{store_path}/{CHECKPOINTS_DIR}/{LAST_CHECKPOINT}',
             model=transformer,
             optimizer=optimizer,
@@ -93,9 +94,10 @@ def run(cfg: TrainConfig, device: torch.device, store_path: Path):
                 lr_scheduler=lr_scheduler,
                 train_loss=train_loss,
                 val_loss=val_loss,
+                epochs_without_improvement=epochs_without_improvement,
             )
 
-        if val_loss <= best_loss:
+        if val_loss < best_loss:
             save_checkpoint(
                 checkpoint_path=f'{store_path}/{CHECKPOINTS_DIR}/{BEST_CHECKPOINT}',
                 epoch=epoch,
@@ -104,8 +106,14 @@ def run(cfg: TrainConfig, device: torch.device, store_path: Path):
                 lr_scheduler=lr_scheduler,
                 train_loss=train_loss,
                 val_loss=val_loss,
+                epochs_without_improvement=epochs_without_improvement,
+            )
+            epochs_without_improvement = (
+                0 if val_loss < best_loss - cfg.early_stopping_min_delta else epochs_without_improvement + 1
             )
             best_loss = val_loss
+        else:
+            epochs_without_improvement += 1
 
         ### LOGGING
         tqdm.write(f'Epoch {epoch + 1:03d}/{end_epoch:03d} | train loss {train_loss:.3f} | val loss {val_loss:.3f}')
@@ -113,5 +121,18 @@ def run(cfg: TrainConfig, device: torch.device, store_path: Path):
         tensorboard_writer.add_scalar('Loss/val', val_loss, epoch)
         tensorboard_writer.add_scalar('Best Loss/val', best_loss, epoch)
         tensorboard_writer.flush()
+
+        if cfg.early_stopping and epochs_without_improvement >= cfg.early_stopping_patience:
+            save_checkpoint(
+                checkpoint_path=f'{store_path}/{CHECKPOINTS_DIR}/{LAST_CHECKPOINT}',
+                epoch=epoch,
+                model=transformer,
+                optimizer=optimizer,
+                lr_scheduler=lr_scheduler,
+                train_loss=train_loss,
+                val_loss=val_loss,
+                epochs_without_improvement=epochs_without_improvement,
+            )
+            break
 
     tensorboard_writer.close()

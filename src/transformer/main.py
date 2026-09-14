@@ -39,13 +39,16 @@ def main():
     device = get_device()
     cfg = TrainConfig(
         model_cfg=TransformerConfig(),  # all fields have defaults now
-        optim_cfg=OptimizerConfig(),  # all defaults
+        optim_cfg=OptimizerConfig(warmup_steps=2000),  # ~29k examples / 128 batch * 100 epochs =~ 22.7k steps total
         data_cfg=DataConfig(),  # all default
-        tok_cfg=TokenizerConfig(tokenizer_type='bpe', vocab_size=1000),
-        num_epochs=1,  # keep tiny for a first smoke run
+        tok_cfg=TokenizerConfig(tokenizer_type='bpe', vocab_size=8000),
+        num_epochs=100,
         batch_size=128,
         resume_path=None,
-        # resume_path='runs/20260914-1623-bpe-ne2-nd2-ep1-b128',
+        # resume_path='runs/20260914-1733-bpe-ne2-nd2-ep100-b128',
+        early_stopping=True,
+        early_stopping_patience=5,
+        early_stopping_min_delta=0.1,
     )
     store_path = get_experiment_path(
         experiment_dir_name=get_experiment_dir_name(train_cfg=cfg), resume_path=cfg.resume_path
