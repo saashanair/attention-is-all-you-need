@@ -21,6 +21,8 @@ class TrainConfig(BaseModel):
     batch_size: PositiveInt = 32
     label_smoothing: float = Field(default=0.1, ge=0.0, lt=1.0)
     shared_embeddings: bool = True
+    resume_path: str | None = None
+    chkpt_n_epochs: int = 10
 
     @model_validator(mode='after')
     def _check_embedding_sharing(self):

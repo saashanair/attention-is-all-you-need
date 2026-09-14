@@ -11,3 +11,6 @@ __pycache__/
 
 # datasets (re-downloadable via datasets lib)
 raw/
+
+# experiment outputs
+runs/

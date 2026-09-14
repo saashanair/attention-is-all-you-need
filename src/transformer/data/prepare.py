@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from ..tokenizers import TokenizerConfig, build_tokenizers
 from .config import DataConfig
@@ -16,11 +17,18 @@ class TranslationPipeline:
     pad_id: int
 
 
-def build_translation_pipeline(data_cfg: DataConfig, tok_cfg: TokenizerConfig, max_seq_len: int) -> TranslationPipeline:
+def build_translation_pipeline(
+    data_cfg: DataConfig, tok_cfg: TokenizerConfig, max_seq_len: int, tok_store_path: Path, resume: bool
+) -> TranslationPipeline:
     print('preparing data (download + tokenizer + pre-process / encoding)')
     raw_data = load_data_from_hf(dataset_name=data_cfg.dataset_name)
     src_tok, tgt_tok = build_tokenizers(
-        raw_data=raw_data, src_lang=data_cfg.src_lang, tgt_lang=data_cfg.tgt_lang, tokenizer_cfg=tok_cfg
+        raw_data=raw_data,
+        src_lang=data_cfg.src_lang,
+        tgt_lang=data_cfg.tgt_lang,
+        tokenizer_cfg=tok_cfg,
+        store_path=tok_store_path,
+        resume=resume,
     )
     data_dict = build_translation_dataset(
         raw=raw_data,
