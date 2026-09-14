@@ -2,11 +2,12 @@ from pathlib import Path
 
 import torch
 from torch import nn
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from ..data import build_dataloaders, build_translation_pipeline
 from ..model import Transformer
-from ..paths import CHECKPOINTS_DIR, TOKENIZER_DIR
+from ..paths import CHECKPOINTS_DIR, LOGGING_DIR, TOKENIZER_DIR
 from .checkpointing import load_best_val_loss, load_checkpoint, save_checkpoint
 from .config import TrainConfig
 from .epoch import evaluate, train_one_epoch
@@ -54,6 +55,8 @@ def run(cfg: TrainConfig, device: torch.device, store_path: Path):
 
     loss_fn = nn.CrossEntropyLoss(label_smoothing=cfg.label_smoothing, ignore_index=translation_pipeline.pad_id)
 
+    tensorboard_writer = SummaryWriter(log_dir=f'{store_path}/{LOGGING_DIR}')
+
     start_epoch = 0
     best_loss = float('inf')
 
@@ -77,11 +80,9 @@ def run(cfg: TrainConfig, device: torch.device, store_path: Path):
             loss_fn,
             device,
             epoch_label=f'Epoch {epoch + 1}/{end_epoch}',
+            tensorboard_writer=tensorboard_writer,
         )
         val_loss = evaluate(data_loaders['validation'], transformer, loss_fn, device, desc='validation')
-
-        ### LOGGING
-        tqdm.write(f'Epoch {epoch + 1:03d}/{end_epoch:03d} | train loss {train_loss:.3f} | val loss {val_loss:.3f}')
 
         if epoch == start_epoch or epoch == end_epoch - 1 or epoch % cfg.chkpt_n_epochs == 0:
             save_checkpoint(
@@ -105,3 +106,12 @@ def run(cfg: TrainConfig, device: torch.device, store_path: Path):
                 val_loss=val_loss,
             )
             best_loss = val_loss
+
+        ### LOGGING
+        tqdm.write(f'Epoch {epoch + 1:03d}/{end_epoch:03d} | train loss {train_loss:.3f} | val loss {val_loss:.3f}')
+        tensorboard_writer.add_scalar('Loss/train', train_loss, epoch)
+        tensorboard_writer.add_scalar('Loss/val', val_loss, epoch)
+        tensorboard_writer.add_scalar('Best Loss/val', best_loss, epoch)
+        tensorboard_writer.flush()
+
+    tensorboard_writer.close()

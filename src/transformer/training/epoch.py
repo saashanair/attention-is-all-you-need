@@ -4,13 +4,18 @@ from tqdm import tqdm
 from ..device import move_batch_to_device
 
 
-def train_one_epoch(data_loader, transformer, optimizer, lr_scheduler, loss_fn, device, epoch_label):
+def train_one_epoch(
+    data_loader, transformer, optimizer, lr_scheduler, loss_fn, device, epoch_label, tensorboard_writer
+):
     transformer.train()
     running_loss = 0.0
 
     pbar = tqdm(data_loader, desc=epoch_label, unit='batch')
 
     for batch_idx, batch in enumerate(pbar):
+        lr = lr_scheduler.get_last_lr()[0]
+        lr_step = lr_scheduler.last_epoch
+        tensorboard_writer.add_scalar('LR', lr, lr_step)
         batch = move_batch_to_device(batch, device=device)
         logits = transformer(
             src=batch['encoder_input'],
@@ -30,7 +35,7 @@ def train_one_epoch(data_loader, transformer, optimizer, lr_scheduler, loss_fn, 
         lr_scheduler.step()
 
         running_loss += loss.item()
-        pbar.set_postfix(loss=f'{loss.item():.3f}', lr=f'{lr_scheduler.get_last_lr()[0]:.2e}')
+        pbar.set_postfix(loss=f'{loss.item():.3f}', lr=f'{lr:.2e} at {lr_step}')
 
     return running_loss / len(data_loader)
 
