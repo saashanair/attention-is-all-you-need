@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from transformer.tokenizers import CharTokenizer
@@ -198,10 +200,28 @@ class TestTokenIDConversion:
 
 
 class TestSaveLoadTokenizer:
-    def test_save(self, ab_tok):
-        with pytest.raises(NotImplementedError):
-            ab_tok.save('temp/ab_tok_test')
+    def test_save(self, ab_tok, tmp_path):
+        path = tmp_path / 'ab_tok_test'
+        ab_tok.save(str(path))
 
-    def test_load(self):
-        with pytest.raises(NotImplementedError):
-            CharTokenizer.load('temp/ab_tok_test')
+        with open(path) as f:
+            saved = json.load(f)
+        assert saved == {'vocab': ab_tok.vocab}
+
+    def test_load(self, tmp_path):
+        path = tmp_path / 'ab_tok_test'
+        vocab = CharTokenizer.SPECIALS + ['a', 'b']
+        with open(path, 'w') as f:
+            json.dump({'vocab': vocab}, f)
+
+        loaded = CharTokenizer.load(str(path))
+        assert loaded.vocab == vocab
+
+    def test_save_load_round_trip(self, ab_tok, tmp_path):
+        path = tmp_path / 'ab_tok_test'
+        ab_tok.save(str(path))
+        loaded = CharTokenizer.load(str(path))
+
+        assert loaded.vocab == ab_tok.vocab
+        assert loaded.encode('ab', add_special_tokens=True) == ab_tok.encode('ab', add_special_tokens=True)
+        assert loaded.decode(ab_tok.encode('ab')) == ab_tok.decode(ab_tok.encode('ab'))
